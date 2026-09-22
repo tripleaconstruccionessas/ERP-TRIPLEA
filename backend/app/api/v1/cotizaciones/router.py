@@ -122,8 +122,8 @@ def descargar_pdf(id: UUID, db: Session = Depends(get_db_session), _: Usuario = 
         cot.cliente_contacto_email = "tripleaconstruccionessas@gmail.com"
     for item in cot.items:
         item.producto_nombre  = item.producto.nombre if item.producto else None
-        item.unidad           = item.producto.unidad_medida if item.producto else "Unidad"
-        item.producto_unidad  = item.unidad
+        item.producto_unidad  = item.unidad or (item.producto.unidad_medida if item.producto else "UN")
+        item.unidad           = item.producto_unidad
     try:
         pdf_bytes = generate_cotizacion_pdf(cot)
     except Exception as exc:
