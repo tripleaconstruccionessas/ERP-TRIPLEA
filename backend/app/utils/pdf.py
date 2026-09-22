@@ -144,12 +144,29 @@ def generate_cotizacion_pdf(cotizacion) -> bytes:
     tc(*_NAVY)
     pdf.set_xy(_LM + logo_w, cur_y + 1)
     pdf.cell(mid_w, 7, "TRIPLE A CONSTRUCCIONES SAS", align="L")
+
+    # Sub-line: NIT | email (hyperlink) | phone
     sf("", 8)
     tc(*_GRAY)
-    pdf.set_xy(_LM + logo_w, cur_y + 9)
-    pdf.cell(mid_w, 5, "NIT: 901.650.581-4  |  tripleaconstruccionessas@gmail.com  |  314 395 2896", align="L")
+    nit_part  = "NIT: 901.650.581-4  |  "
+    email_str = "tripleaconstruccionessas@gmail.com"
+    tel_part  = "  |  314 395 2896"
+    info_y = cur_y + 9
+    info_x = _LM + logo_w + 1
+    nit_w   = pdf.get_string_width(nit_part)
+    email_w = pdf.get_string_width(email_str)
+    pdf.set_xy(info_x, info_y)
+    pdf.cell(nit_w, 5, nit_part)
+    pdf.set_font("Helvetica", "U", 8)
+    pdf.set_xy(info_x + nit_w, info_y)
+    pdf.cell(email_w, 5, email_str)
+    pdf.link(info_x + nit_w, info_y, email_w, 5, "mailto:tripleaconstruccionessas@gmail.com")
+    sf("", 8)
+    tc(*_GRAY)
+    pdf.set_xy(info_x + nit_w + email_w, info_y)
+    pdf.cell(pdf.get_string_width(tel_part) + 4, 5, tel_part)
 
-    # Cotización box (right)
+    # Cotización box (right) — auto-fit number font
     fc(*_NAVY)
     dc(*_NAVY)
     pdf.rect(_LM + logo_w + mid_w, cur_y, cot_w, hdr_h, style="F")
@@ -157,9 +174,14 @@ def generate_cotizacion_pdf(cotizacion) -> bytes:
     tc(*_WHITE)
     pdf.set_xy(_LM + logo_w + mid_w, cur_y + 2)
     pdf.cell(cot_w, 5, "COTIZACION", align="C")
-    sf("B", 14)
+    # auto-fit: shrink font until number fits
+    num_size = 12
+    sf("B", num_size)
+    while pdf.get_string_width(numero) > cot_w - 4 and num_size > 7:
+        num_size -= 1
+        sf("B", num_size)
     pdf.set_xy(_LM + logo_w + mid_w, cur_y + 7)
-    pdf.cell(cot_w, 7, f"N\xba {numero}", align="C")
+    pdf.cell(cot_w, 7, numero, align="C")
 
     cur_y += hdr_h + 2
 
@@ -363,10 +385,13 @@ def generate_cotizacion_pdf(cotizacion) -> bytes:
         tc(*_BLACK)
         for ln in obs_lines:
             pdf.set_xy(_LM, obs_y)
-            if ln.startswith("Ver online:"):
+            if ln.startswith("Ver online:") and token_publico:
                 tc(*_GREEN)
-                sf("", 7)
+                pdf.set_font("Helvetica", "U", 7)
+                cell_y = obs_y
                 pdf.cell(notes_w, 5.5, _trunc(pdf, ln, notes_w - 4), border="LR", align="L")
+                pdf.link(_LM, cell_y, notes_w, 5.5, f"{_FRONTEND_URL}/ver/{token_publico}")
+                sf("", 7)
                 tc(*_BLACK)
             else:
                 pdf.cell(notes_w, 5.5, f"- {_trunc(pdf, ln, notes_w - 5)}", border="LR", align="L")
